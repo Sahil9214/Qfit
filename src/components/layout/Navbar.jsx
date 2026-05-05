@@ -1,0 +1,273 @@
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Menu, X, ChevronDown } from 'lucide-react';
+import { Button } from '../ui';
+import { Link } from 'react-router-dom';
+
+
+const Navbar = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const dropdownRef = useRef(null);
+
+  const isActive = (link) => {
+    if (link.path === "/") {
+      return location.pathname === "/";
+    }
+    return location.pathname.startsWith(link.path);
+  };
+
+  const navLinks = [
+    {
+      name: 'Home',
+      path: '/',
+      // hasDropdown: true,
+      // dropdownItems: [
+      //   { name: 'About Us', id: 'about-us', homePath: '/' },
+      //   { name: 'Our Plans', path: '/plans' },
+      //   { name: 'Why Choose Us', id: 'why-choose-us', homePath: '/' }
+      // ]
+    },
+    { name: 'Plans', path: '/plans' },
+    { name: 'About', path: '/about' },
+    // { name: 'Terms & Conditions', path: '/terms-conditions' },
+    { name: 'Contact Us', path: '/contact-us' },
+  ];
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Close mobile menu on escape key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const scrollToSection = (id) => {
+    const element = document.getElementById(id);
+    if (element) {
+      const offset = 80;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - offset;
+      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+    }
+  };
+
+  const handleDropdownItemClick = (item) => {
+    setOpenDropdown(null);
+    setIsOpen(false);
+
+    if (item.path) {
+      navigate(item.path);
+      return;
+    }
+
+    // Item has a section id — if we're already on the home page, scroll directly
+    if (item.homePath && location.pathname !== item.homePath) {
+      navigate(item.homePath);
+      // After navigation, wait for the page to render then scroll
+      setTimeout(() => scrollToSection(item.id), 300);
+    } else {
+      scrollToSection(item.id);
+    }
+  };
+
+  const toggleDropdown = (linkName) => {
+    setOpenDropdown(openDropdown === linkName ? null : linkName);
+  };
+
+  const handleNavClick = (e, link) => {
+    e.preventDefault();
+    setIsOpen(false);
+
+    // If it's a path-based link, navigate to that path
+    if (link.path) {
+      navigate(link.path);
+      return;
+    }
+
+    // Otherwise, scroll to the section
+    const element = document.getElementById(link.id);
+    if (element) {
+      const offset = 80;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - offset;
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  return (
+    <nav className={`bg-white sticky top-0 z-50 rounded-[50px] transition-shadow duration-300 max-w-[1280px] mx-auto  mx-3 mt-3 ${scrolled ? 'shadow-card' : 'shadow-sm'}`}>
+      <div className="flex justify-between items-center h-[60px] md:h-[72px] px-4 tracking-[1px]">
+        {/* Logo */}
+        <div className="flex-shrink-0">
+          <button
+            onClick={() => navigate('/')}
+            className="flex w-[122px] md:w-full items-center hover:opacity-80 transition-opacity cursor-pointer"
+          >
+            <img
+              src="/assets/logos/main-logo.png"
+              className='w-[146px]'
+              alt="RupeeQ Logo"
+              onError={(e) => {
+                // Fallback to text if image not found
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'block';
+              }}
+            />
+            <span className="text-2xl font-bold text-primary hidden">RupeeQ</span>
+          </button>
+        </div>
+
+        <div className='flex flex-row space-x-[84px]'>
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-10" ref={dropdownRef}>
+            {navLinks.map((link) => (
+              <div key={link.name} className="relative">
+                {link.hasDropdown ? (
+                  <div>
+                    <button
+                      onClick={() => toggleDropdown(link.name)}
+                      className="text-[#555555] hover:text-primary transition-colors duration-200 font-normal text-base leading-[21px] flex items-center gap-1"
+                    >
+                      {link.name}
+                      <ChevronDown
+                        size={16}
+                        className={`transition-transform duration-200 ${openDropdown === link.name ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {openDropdown === link.name && (
+                      <div className="absolute top-full -left-36 mt-2 w-56 bg-white rounded-2xl shadow-lg border border-gray-100 py-2 z-50 animate-slide-up">
+                        {link.dropdownItems.map((item) => (
+                          <button
+                            key={item.path || item.id}
+                            onClick={() => handleDropdownItemClick(item)}
+                            className="w-full text-left px-4 py-3 text-[#555555] hover:bg-purple-50 hover:text-primary transition-colors duration-200 font-normal text-base leading-[21px]"
+                          >
+                            {item.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <a
+                    href={link.path || `#${link.id}`}
+                    onClick={(e) => handleNavClick(e, link)}
+
+                    className={`transition-colors duration-200 font-normal text-base leading-[21px] ${isActive(link)
+                        ? "text-primary hover:text-primary"
+                        : "text-[#555555] hover:text-primary"
+                      }`}
+                  // className="text-[#555555] hover:text-primary transition-colors duration-200 font-normal text-base leading-[21px]"
+                  >
+                    {link.name}
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div >
+          <Link to="/plans" className="bg-[#5b21b6] text-white text-[14px] font-medium px-6 py-[12px]  rounded-full hover:bg-[#4c1d95] transition-colors">
+            Explore Plans
+          </Link>
+        </div>
+
+        {/* Mobile menu button */}
+        <div className="md:hidden flex items-center">
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="text-neutral-700 hover:text-primary transition-colors"
+            aria-label="Toggle menu"
+            aria-expanded={isOpen}
+          >
+            {isOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Navigation */}
+      {isOpen && (
+        <div className="md:hidden absolute top-full left-0 right-0 bg-white border-t animate-slide-up rounded-2xl shadow-lg z-40">
+          <div className="px-2 pt-2 pb-3 space-y-1">
+            {navLinks.map((link) => (
+              <div key={link.name}>
+                {link.hasDropdown ? (
+                  <div>
+                    <button
+                      onClick={() => toggleDropdown(link.name)}
+                      className="w-full flex items-center justify-between px-3 py-2 text-neutral-700 hover:text-primary hover:bg-neutral-50 rounded-md transition-colors font-medium"
+                    >
+                      {link.name}
+                      <ChevronDown
+                        size={16}
+                        className={`transition-transform duration-200 ${openDropdown === link.name ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                    {openDropdown === link.name && (
+                      <div className="pl-4 mt-1 space-y-1">
+                        {link.dropdownItems.map((item) => (
+                          <button
+                            key={item.path || item.id}
+                            onClick={() => handleDropdownItemClick(item)}
+                            className="w-full text-left px-3 py-2 text-sm text-neutral-600 hover:text-primary hover:bg-neutral-50 rounded-md transition-colors"
+                          >
+                            {item.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <a
+                    href={link.path || `#${link.id}`}
+                    onClick={(e) => handleNavClick(e, link)}
+                    className="block px-3 py-2 text-neutral-700 hover:text-primary hover:bg-neutral-50 rounded-md transition-colors font-medium"
+                  >
+                    {link.name}
+                  </a>
+                )}
+              </div>
+            ))}
+            <Button variant="header" className="w-full mt-2" onClick={() => {
+              setIsOpen(false);
+              navigate('/plans');
+            }}>Get Started</Button>
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+};
+
+export default Navbar;
