@@ -1,5 +1,5 @@
 import React from 'react'
-import Stepper from '../components/stepper'
+import Stepper from '../components/Stepper'
 import { Outlet } from 'react-router-dom'
 
 const FormLayout = () => {
